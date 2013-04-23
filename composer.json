@@ -1,5 +1,5 @@
 {
-    "name": "jhv-payment-plugin-cobre-bem-bundle",
+    "name": "jhv/payment/plugin/cobre-bem-bundle",
     "type": "symfony-bundle",
     "description": "JHVPaymentPluginCobreBemBundle",
     "keywords": ["payment plugin", "plugin"],
