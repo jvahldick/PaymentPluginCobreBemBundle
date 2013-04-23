@@ -1,0 +1,20 @@
+services:
+      ### Registro do plugin
+      cobre_bem.plugin.credit_card:
+          class       : "%jhv_payment_plugin_cobre_bem.parameter.credit_card.class%"
+          arguments   :
+            - "%jhv_payment_plugin_cobre_bem.parameter.url_autorizacao%"
+            - "%jhv_payment_plugin_cobre_bem.parameter.url_captura%"
+            - "%jhv_payment_plugin_cobre_bem.parameter.url_cancelamento%"
+            
+          tags  :
+              - { name: "jhv_payment.plugin_extension" }
+              
+      ### Formulário extra
+      cobre_bem.form_type.credit_card:
+          class       : "%jhv_payment_plugin_cobre_bem.parameter.credit_card.form_type.class%"
+          arguments   :
+              - "@jhv_payment_service.manager.payment_method"
+          tags:
+              - { name: "form.type", alias: "cobre_bem_credit_card_type" }
+              - { name: "jhv_payment.payment_method", plugin: "cobre_bem_credit_card" }
