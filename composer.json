@@ -1,0 +1,20 @@
+{
+    "name": "jhv/payment/plugin/cobre-bem-bundle",
+    "type": "symfony-bundle",
+    "description": "JHVPaymentPluginCobreBemBundle",
+    "keywords": ["payment plugin", "plugin"],
+    "authors": [
+        {
+            "name": "Jorge Vahldick",
+            "email": "jvahldick@gmail.com"
+        }
+    ],
+    
+    "minimum-stability": "dev",
+    
+    "autoload": {
+        "psr-0": { "JHV\\Payment\\Plugin\\CobreBemBundle": "" }
+    },
+    
+    "target-dir": "JHV/Payment/Plugin/CobreBemBundle"
+}
