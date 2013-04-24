@@ -6,6 +6,10 @@ use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\FormEvents;
 use Symfony\Component\Form\FormEvent;
 
+use Symfony\Component\Validator\Constraints\Callback;
+use Symfony\Component\Validator\ExecutionContext;
+use Symfony\Component\Validator\Constraints\Regex;
+
 use Symfony\Component\Form\FormError;
 use JHV\Payment\ServiceBundle\Manager\PaymentMethodManagerInterface;
 
@@ -37,22 +41,31 @@ class CreditCardType extends AbstractType
         
         $builder
             ->add('holder', 'text', array(
-                'label'     => 'form_label.credit_card.holder',
-                'required'  => false,
+                'label'         => 'form_label.credit_card.holder',
+                'required'      => false,
             ))
             ->add('number', 'text', array(
-                'label'     => 'form_label.credit_card.number',
-                'required'  => false,
+                'label'         => 'form_label.credit_card.number',
+                'constraints'   => array(
+                    new Callback(array('methods' => array(
+                        array($this, 'isCreditCardValid')
+                    ))),
+                ),
+                'required'      => false,
             ))
             ->add('expiration', 'date', array(
-                'format'    => 'ddMMyyyy',
-                'days'      => array(1 => 1),
-                'years'     => $choiceYears,
+                'format'        => 'ddMMyyyy',
+                'days'          => array(1 => 1),
+                'years'         => $choiceYears,
             ))
             ->add('code', 'text', array(
                 'label'         => 'form_label.credit_card.ccv',
                 'required'      => false,
-                'max_length'    => 3,
+                'max_length'    => 4,
+                'constraints'   => new Regex(array(
+                    'pattern'   => "/^[0-9]{3,4}$/", 
+                    'message'   => "form.payment.credit_card.error.number.code"
+                ))
             ))
             ->addEventListener(FormEvents::POST_BIND, function (FormEvent $event) use ($self) {
                 $form = $event->getForm();
@@ -95,10 +108,6 @@ class CreditCardType extends AbstractType
             $form->get('number')->addError(new FormError('form.payment.credit_card.error.blank_error.number'));
         }
         
-        if (false === is_numeric($data['number'])) {
-            $form->get('number')->addError(new FormError('form.payment.credit_card.error.numeric_error.number'));
-        }
-        
         if ($data['expiration'] <= new \DateTime('now')) {
             $form->get('expiration')->addError(new FormError('form.payment.credit_card.error.expiration_error.expiration'));
         }
@@ -106,9 +115,28 @@ class CreditCardType extends AbstractType
         if (empty($data['code'])) {
             $form->get('code')->addError(new FormError('form.payment.credit_card.error.blank_error.code'));
         }
-        
-        if (strlen($data['code']) != 3) {
-            $form->get('code')->addError(new FormError('form.payment.credit_card.error.error_length.code'));
+    }
+    
+    public function isCreditCardValid($value, ExecutionContext $context) 
+    {
+        if (null === $value || '' === $value) {
+            return;
+        }
+
+        if (false === is_numeric($value)) {
+            $context->addViolation('form.payment.credit_card.error.numeric_error.number');
+            return;
+        }
+
+        $length = strlen($value);
+        $oddLength = $length % 2;
+        for ($sum = 0, $i = $length - 1; $i >= 0; $i--) {
+            $digit = (int) $value[$i];
+            $sum += (($i % 2) === $oddLength) ? array_sum(str_split($digit * 2)) : $digit;
+        }
+
+        if ($sum === 0 || ($sum % 10) !== 0) {
+            $context->addViolation('form.payment.credit_card.error.number_error.number');
         }
     }
     
