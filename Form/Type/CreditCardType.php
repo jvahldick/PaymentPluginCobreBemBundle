@@ -5,7 +5,6 @@ namespace JHV\Payment\Plugin\CobreBemBundle\Form\Type;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\FormEvents;
 use Symfony\Component\Form\FormEvent;
-
 use Symfony\Component\Validator\Constraints\Callback;
 use Symfony\Component\Validator\ExecutionContext;
 use Symfony\Component\Validator\Constraints\Regex;
@@ -100,7 +99,7 @@ class CreditCardType extends AbstractType
             $form->get('holder')->addError(new FormError('form.payment.credit_card.error.not_blank.holder'));
         }
         
-        if (strlen($data['holder']) <= 5) {
+        if (strlen($data['holder']) <= 3) {
             $form->get('holder')->addError(new FormError('form.payment.credit_card.error.min_length.holder'));
         }
         
