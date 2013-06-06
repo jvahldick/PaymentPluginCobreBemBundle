@@ -53,6 +53,7 @@ class CreditCardType extends AbstractType
                 'required'      => false,
             ))
             ->add('expiration', 'date', array(
+                'label'         => 'form_label.expiration',
                 'format'        => 'ddMMyyyy',
                 'days'          => array(1 => 1),
                 'years'         => $choiceYears,

@@ -2,9 +2,10 @@
 
 namespace JHV\Payment\Plugin\CobreBemBundle\Gateway;
 
-use JHV\Payment\ServiceBundle\Plugin\Plugin;
+use JHV\Payment\ServiceBundle\Plugin\GatewayPlugin;
 use JHV\Payment\CoreBundle\Financial\TransactionInterface;
 use JHV\Payment\ServiceBundle\Model\PaymentMethodInterface;
+use JHV\Payment\ServiceBundle\Http\Request;
 
 /**
  * CreditCardPlugin
@@ -13,7 +14,7 @@ use JHV\Payment\ServiceBundle\Model\PaymentMethodInterface;
  * @license Please view /Resources/meta/LICENCE
  * @copyright (c) 2013
  */
-class CreditCardPlugin extends Plugin
+class CreditCardPlugin extends GatewayPlugin
 {
     
     protected $enderecoAutorizacao;
@@ -25,6 +26,8 @@ class CreditCardPlugin extends Plugin
         $this->enderecoCancelamento = $destinoCancelamento;
         $this->enderecoAutorizacao = $destinoAutorizacao;
         $this->enderecoCaptura = $destinoCaptura;
+
+        parent::__construct();
     }
     
     public function authorizeCapture(TransactionInterface $transaction, PaymentMethodInterface $method)
@@ -46,7 +49,7 @@ class CreditCardPlugin extends Plugin
         $extra = $method->getExtendedData();
               
         // Definição dos parâmetros para solicitação da autorização
-        /** @todo buscar o número do pedido, verificar parcelas */
+        /** TODO: buscar o número do pedido, verificar parcelas */
         // Adicionar no array:
         // 'NumeroDocumento'       => 'numero_pedido',
         $parameters = array(
@@ -65,13 +68,15 @@ class CreditCardPlugin extends Plugin
         );
         
         $request    = new Request($this->enderecoAutorizacao, 'POST', $parameters);
-        $response   = $this->bind($request, false);
+        $response   = $this->bind($request);
         
         $extendedData = array('autorizacao' => $this->xmlToArrayConversion(simplexml_load_string($response->getContent())));
         $transaction->setReturnedData($extendedData);
         if (isset($extendedData['autorizacao']['TransacaoAprovada']) && 'True' === $extendedData['autorizacao']['TransacaoAprovada']) {
             $transaction->setProcessedAmount($transaction->getRequestedAmount());
             $transaction->setTransactionId($extendedData['autorizacao']['Transacao']);
+        } else {
+            $transaction->setStatus(TransactionInterface::STATUS_CANCELED);
         }
     }
     
@@ -83,7 +88,7 @@ class CreditCardPlugin extends Plugin
         
         $parameters     = array('Transacao' => $transaction->getTransactionId());
         $request        = new Request($this->enderecoCaptura, 'POST', $parameters);
-        $response       = $this->bind($request, false);
+        $response       = $this->bind($request);
         $returnedData   = array_merge($transaction->getReturnedData(), array('captura' => $this->xmlToArrayConversion(simplexml_load_string($response->getContent()))));
         $transaction->setReturnedData($returnedData);
         
@@ -95,7 +100,7 @@ class CreditCardPlugin extends Plugin
         // Verificação de erro, caso tenha entrado no IF é porque ocorreu erro
         if (false !== strpos($returnedData['captura']['ResultadoSolicitacaoConfirmacao'], 'Erro')) {
             $transaction->setProcessedAmount(0.00);
-            $transaction->setStatus(TransactionInterface::STATUS_FAILED);
+            $transaction->setStatus(TransactionInterface::STATUS_CANCELED);
         } else {
             $transaction->setProcessedAmount($transaction->getRequestedAmount());
             $transaction->setStatus(TransactionInterface::STATUS_SUCCESS);
@@ -110,7 +115,7 @@ class CreditCardPlugin extends Plugin
         
         $parameters     = array('Transacao' => $transaction->getTransactionId());
         $request        = new Request($this->enderecoCancelamento, 'POST', $parameters);
-        $response       = $this->bind($request, false);
+        $response       = $this->bind($request);
         $returnedData   = array_merge($transaction->getReturnedData(), array('cancelamento' => $this->xmlToArrayConversion(simplexml_load_string($response->getContent()))));
         $transaction->setReturnedData($returnedData);
         
